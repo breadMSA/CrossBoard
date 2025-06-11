@@ -41,6 +41,16 @@
                     <TextBlock Text="Service Status:" FontWeight="Bold"/>
                     <TextBlock x:Name="ServiceStatusText" Text="Running" Margin="0,0,0,10"/>
                     
+                    <TextBlock Text="Device Name:" FontWeight="Bold"/>
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="DeviceNameTextBox" Grid.Column="0" Margin="0,0,5,0"/>
+                        <Button x:Name="SaveDeviceNameButton" Grid.Column="1" Content="Save" Click="SaveDeviceNameButton_Click"/>
+                    </Grid>
+                    
                     <TextBlock Text="IP Addresses:" FontWeight="Bold"/>
                     <TextBox x:Name="IpAddressText" Height="60" IsReadOnly="True" TextWrapping="Wrap" Margin="0,0,0,10"/>
                     

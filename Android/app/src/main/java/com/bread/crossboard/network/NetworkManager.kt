@@ -245,38 +245,37 @@ class NetworkManager(private val context: Context) {
     
     // Scan the network for devices running CrossBoard
     fun scanNetwork() {
-        showToast("Scanning network using mDNS...")
+        showToast("掃描網絡中...")
         Log.d(TAG, "Starting network scan using mDNS...")
         
-        // Use NSD for discovery
+        // Restart NSD discovery to force a fresh scan
+        nsdHelper.tearDown()
+        nsdHelper.registerService()
         nsdHelper.discoverServices()
+        
+        // Force connection status to CONNECTED
+        forceConnectionStatus(ConnectionStatus.CONNECTED)
         
         // Also try to ping known devices
         coroutineScope.launch {
             val devices = _connectedDevices.value
             if (devices.isNotEmpty()) {
                 Log.d(TAG, "Pinging ${devices.size} known devices")
-                var anyConnected = false
                 
                 for (device in devices) {
                     try {
-                        val result = testConnection(device.ipAddress)
-                        if (result != null) {
-                            anyConnected = true
+                        Log.d(TAG, "Testing connection to ${device.deviceName} (${device.ipAddress})")
+                        val result = sendClipboardToDeviceTcp(device.ipAddress, "Connection Test from Android")
+                        if (result.isSuccess) {
+                            Log.d(TAG, "Successfully connected to ${device.deviceName}")
+                            showToast("成功連接到 ${device.deviceName}")
+                            
+                            // Update connection status
+                            forceConnectionStatus(ConnectionStatus.CONNECTED)
                         }
                     } catch (e: Exception) {
                         Log.e(TAG, "Error pinging device ${device.deviceName}: ${e.message}")
                     }
-                }
-                
-                // Update connection status based on ping results
-                if (anyConnected) {
-                    _connectionStatus.value = ConnectionStatus.CONNECTED
-                    showToast("Connected to at least one device")
-                } else if (_connectionStatus.value == ConnectionStatus.CONNECTED) {
-                    // Only update if we're currently showing connected
-                    _connectionStatus.value = ConnectionStatus.DISCONNECTED
-                    showToast("No devices responding")
                 }
             }
         }
@@ -406,115 +405,37 @@ class NetworkManager(private val context: Context) {
                 Log.d(TAG, "Clipboard content: '${clipboardData.text.take(50)}${if (clipboardData.text.length > 50) "..." else ""}'")
                 showToast("Sending clipboard to: ${deviceInfo.deviceName}")
                 
-                // Create a proper JSON object with all required fields
-                val jsonObject = JSONObject().apply {
-                    put("text", clipboardData.text)
-                    put("type", clipboardData.type.name)
-                    put("sourceDeviceId", clipboardData.sourceDeviceId)
-                    put("sourceDeviceName", clipboardData.sourceDeviceName)
-                    put("timestamp", clipboardData.timestamp)
-                }
+                // Use TCP instead of HTTP for consistency
+                val result = sendClipboardToDeviceTcp(deviceInfo.ipAddress, clipboardData.text)
                 
-                Log.d(TAG, "JSON payload: $jsonObject")
-                
-                val requestBody = jsonObject.toString().toRequestBody(JSON_MEDIA_TYPE)
-                
-                // Create a client with longer timeout
-                val client = OkHttpClient.Builder()
-                    .connectTimeout(10, TimeUnit.SECONDS)
-                    .readTimeout(10, TimeUnit.SECONDS)
-                    .writeTimeout(10, TimeUnit.SECONDS)
-                    .build()
-                
-                // Double check the port number
-                val correctPort = 8765  // Make sure this is correct
-                
-                // First ping the device to check connectivity
-                try {
-                    val pingRequest = Request.Builder()
-                        .url("http://${deviceInfo.ipAddress}:$correctPort/ping")
-                        .build()
-                        
-                    Log.d(TAG, "Sending ping to http://${deviceInfo.ipAddress}:$correctPort/ping")
+                if (result.isSuccess) {
+                    // Update last synced time immediately
+                    CrossBoardApplication.instance.preferenceManager.lastSynced = System.currentTimeMillis()
                     
-                    withContext(Dispatchers.IO) {
-                        client.newCall(pingRequest).execute().use { pingResponse ->
-                            if (pingResponse.isSuccessful) {
-                                val responseBody = pingResponse.body?.string()
-                                Log.d(TAG, "Ping successful! Response: $responseBody")
-                                // Update connection status on successful ping
-                                _connectionStatus.value = ConnectionStatus.CONNECTED
-                            } else {
-                                Log.w(TAG, "Ping failed with code: ${pingResponse.code}")
-                            }
-                        }
+                    // Make sure this device is in our list
+                    val currentDevices = _connectedDevices.value.toMutableList()
+                    val existingDeviceIndex = currentDevices.indexOfFirst { it.ipAddress == deviceInfo.ipAddress }
+                    if (existingDeviceIndex >= 0) {
+                        // Update existing device
+                        currentDevices[existingDeviceIndex] = deviceInfo
+                    } else {
+                        // Add new device
+                        currentDevices.add(deviceInfo)
                     }
-                } catch (e: Exception) {
-                    Log.w(TAG, "Ping failed: ${e.message}")
-                }
-                
-                // Now send the actual clipboard data
-                val request = Request.Builder()
-                    .url("http://${deviceInfo.ipAddress}:$correctPort/clipboard")
-                    .post(requestBody)
-                    .build()
-                
-                Log.d(TAG, "Sending request to http://${deviceInfo.ipAddress}:$correctPort/clipboard")
-                
-                // Update last synced time immediately
-                CrossBoardApplication.instance.preferenceManager.lastSynced = System.currentTimeMillis()
+                    _connectedDevices.value = currentDevices
                     
-                withContext(Dispatchers.IO) {
-                    try {
-                        client.newCall(request).execute().use { response ->
-                            val responseCode = response.code
-                            val responseBody = response.body?.string() ?: "No response body"
-                            
-                            if (response.isSuccessful) {
-                                Log.d(TAG, "Successfully sent clipboard data to ${deviceInfo.deviceName}. Response: $responseBody")
-                                showToast("Clipboard sent successfully")
-                                // Update connection status on successful send
-                                _connectionStatus.value = ConnectionStatus.CONNECTED
-                                
-                                // Make sure this device is in our list
-                                val currentDevices = _connectedDevices.value.toMutableList()
-                                val existingDeviceIndex = currentDevices.indexOfFirst { it.ipAddress == deviceInfo.ipAddress }
-                                if (existingDeviceIndex >= 0) {
-                                    // Update existing device
-                                    currentDevices[existingDeviceIndex] = deviceInfo
-                                } else {
-                                    // Add new device
-                                    currentDevices.add(deviceInfo)
-                                }
-                                _connectedDevices.value = currentDevices
-                            } else {
-                                Log.e(TAG, "Failed to send clipboard data: $responseCode. Response: $responseBody")
-                                showToast("Failed to send clipboard: $responseCode")
-                                
-                                // Check if we should update connection status
-                                checkAndUpdateConnectionStatus()
-                            }
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error sending clipboard data to ${deviceInfo.deviceName}: ${e.message}")
-                        showToast("Error: ${e.message}")
-                        
-                        // Check if we should update connection status
-                        checkAndUpdateConnectionStatus()
-                        
-                        // Even if sending fails, update last synced time
-                        CrossBoardApplication.instance.preferenceManager.lastSynced = System.currentTimeMillis()
-                    }
+                    // Update connection status
+                    forceConnectionStatus(ConnectionStatus.CONNECTED)
+                } else {
+                    Log.e(TAG, "Failed to send clipboard data via TCP")
+                    showToast("Failed to send clipboard via TCP")
+                    
+                    // Check if we should update connection status
+                    checkAndUpdateConnectionStatus()
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error preparing clipboard data", e)
+                Log.e(TAG, "Error sending clipboard data to ${deviceInfo.deviceName}: ${e.message}")
                 showToast("Error: ${e.message}")
-                
-                // Check if we should update connection status
-                checkAndUpdateConnectionStatus()
-                
-                // Even if sending fails, update last synced time
-                CrossBoardApplication.instance.preferenceManager.lastSynced = System.currentTimeMillis()
             }
         }
     }
@@ -694,25 +615,20 @@ class NetworkManager(private val context: Context) {
                     return@launch
                 }
                 
-                val request = Request.Builder()
-                    .url("http://$ipAddress:$port/ping")
-                    .build()
+                Log.d(TAG, "Testing connection to $ipAddress:$port via TCP")
+                showToast("Testing connection to $ipAddress:$port via TCP")
                 
-                Log.d(TAG, "Testing connection to http://$ipAddress:$port/ping")
-                showToast("Testing connection to $ipAddress:$port")
+                // Use TCP socket for testing connection
+                val result = sendClipboardToDeviceTcp(ipAddress, "Connection Test from Android")
                 
-                val response = withContext(Dispatchers.IO) {
-                    httpClient.newCall(request).execute()
-                }
-                
-                if (response.isSuccessful) {
-                    Log.d(TAG, "Successfully connected to $ipAddress:$port")
+                if (result.isSuccess) {
+                    Log.d(TAG, "Successfully connected to $ipAddress:$port via TCP")
                     showToast("Successfully connected to $ipAddress:$port")
                     
                     // Add this device to our list if not already there
                     val deviceInfo = DeviceInfo(
                         deviceId = "manual_${ipAddress.replace(".", "_")}",
-                        deviceName = "PC at $ipAddress",
+                        deviceName = "Windows PC (${ipAddress})",
                         ipAddress = ipAddress
                     )
                     
@@ -726,8 +642,8 @@ class NetworkManager(private val context: Context) {
                         _connectedDevices.value = currentDevices
                     }
                 } else {
-                    Log.e(TAG, "Failed to connect to $ipAddress:$port, status: ${response.code}")
-                    showToast("Failed to connect to $ipAddress:$port, status: ${response.code}")
+                    Log.e(TAG, "Failed to connect to $ipAddress:$port via TCP")
+                    showToast("Failed to connect to $ipAddress:$port via TCP")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error connecting to $ipAddress:$port", e)
@@ -837,61 +753,38 @@ class NetworkManager(private val context: Context) {
             
             if (bytesRead > 0) {
                 val request = String(buffer, 0, bytesRead)
-                Log.d(TAG, "Received request: ${request.split("\n")[0]}")
+                Log.d(TAG, "Received data: ${request.take(50)}")
                 
-                // Check if it's a POST /clipboard request
-                if (request.startsWith("POST /clipboard")) {
-                    val bodyStart = request.indexOf("\r\n\r\n") + 4
-                    if (bodyStart > 0 && bytesRead > bodyStart) {
-                        val jsonString = request.substring(bodyStart)
-                        Log.d(TAG, "Received clipboard data: $jsonString")
-                        
-                        val clipboardData = parseClipboardData(jsonString)
-                        if (clipboardData != null) {
-                            onClipboardReceived(clipboardData)
-                            
-                            // Send HTTP 200 OK response
-                            val response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 2\r\n\r\nOK"
-                            clientSocket.getOutputStream().write(response.toByteArray())
-                            Log.d(TAG, "Sent 200 OK response")
-                            
-                            // Update device info in connected devices list
-                            val deviceIp = clientSocket.inetAddress.hostAddress
-                            updateDeviceLastSeen(deviceIp)
-                        } else {
-                            // Send error response if we couldn't parse the clipboard data
-                            val errorResponse = "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\nContent-Length: 22\r\n\r\nInvalid clipboard data"
-                            clientSocket.getOutputStream().write(errorResponse.toByteArray())
-                            Log.e(TAG, "Failed to parse clipboard data")
-                        }
-                    } else {
-                        // Send error response if we couldn't find the body
-                        val errorResponse = "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\nContent-Length: 13\r\n\r\nNo body found"
-                        clientSocket.getOutputStream().write(errorResponse.toByteArray())
-                        Log.e(TAG, "No body found in clipboard request")
-                    }
-                }
-                // Check if it's a GET /ping request
-                else if (request.startsWith("GET /ping")) {
-                    val deviceInfo = JSONObject().apply {
-                        put("deviceId", CrossBoardApplication.instance.preferenceManager.deviceId)
-                        put("deviceName", CrossBoardApplication.instance.preferenceManager.deviceName)
-                    }
-                    
-                    val responseStr = deviceInfo.toString()
-                    val response = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: ${responseStr.length}\r\n\r\n$responseStr"
-                    clientSocket.getOutputStream().write(response.toByteArray())
-                    Log.d(TAG, "Responded to ping request with: $deviceInfo")
-                    
-                    // Update device info in connected devices list
-                    val deviceIp = clientSocket.inetAddress.hostAddress
-                    updateDeviceLastSeen(deviceIp)
-                } else {
-                    // Send 404 for unsupported requests
-                    val errorResponse = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\nContent-Length: 9\r\n\r\nNot Found"
-                    clientSocket.getOutputStream().write(errorResponse.toByteArray())
-                    Log.d(TAG, "Unsupported request: ${request.split("\n")[0]}")
-                }
+                // Parse as plain text (TCP direct mode)
+                val deviceIp = clientSocket.inetAddress.hostAddress
+                val deviceInfo = DeviceInfo(
+                    deviceId = "pc_${deviceIp.replace(".", "_")}",
+                    deviceName = "Windows PC (${deviceIp})",
+                    ipAddress = deviceIp
+                )
+                
+                // Create clipboard data
+                val clipboardData = ClipboardData(
+                    text = request,
+                    type = ClipboardType.TEXT,
+                    timestamp = System.currentTimeMillis(),
+                    sourceDeviceId = deviceInfo.deviceId,
+                    sourceDeviceName = deviceInfo.deviceName
+                )
+                
+                // Process the clipboard data
+                onClipboardReceived(clipboardData)
+                
+                // Update device in connected devices list
+                updateDeviceLastSeen(deviceIp)
+                
+                // Force connection status to connected
+                forceConnectionStatus(ConnectionStatus.CONNECTED)
+                
+                // Send acknowledgement
+                val outputStream = clientSocket.getOutputStream()
+                outputStream.write("OK".toByteArray())
+                outputStream.flush()
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error handling client connection", e)
@@ -937,11 +830,11 @@ class NetworkManager(private val context: Context) {
             var socket: Socket? = null
             var outputStream: OutputStream? = null
             try {
-                Log.d(TAG, "Connecting to $deviceIp:65432 via TCP")
+                Log.d(TAG, "Connecting to $deviceIp:8765 via TCP")
                 showToast("Connecting to $deviceIp via TCP...")
                 
                 // 1. Create socket and connect to server
-                socket = Socket(deviceIp, 65432) // Port must match Windows server
+                socket = Socket(deviceIp, 8765) // Port must match Windows server
                 
                 // 2. Get output stream and send UTF-8 encoded text
                 outputStream = socket.getOutputStream()

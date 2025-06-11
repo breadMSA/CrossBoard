@@ -15,11 +15,11 @@ class NsdHelper(private val context: Context) {
 
     private val TAG = "NsdHelper"
     
-    // Service type for CrossBoard clipboard sync
+    // Service type for CrossBoard clipboard sync - use standard service type for better compatibility
     private val SERVICE_TYPE = "_crossboard._tcp."
     
-    // Service name for this device
-    private val SERVICE_NAME = "CrossBoard-${android.os.Build.MODEL}"
+    // Service name for this device - include Android to make it more identifiable
+    private val SERVICE_NAME = "CrossBoard-Android-${android.os.Build.MODEL}"
     
     // Port for the service
     private val SERVICE_PORT = 8765
@@ -54,6 +54,14 @@ class NsdHelper(private val context: Context) {
             serviceName = SERVICE_NAME
             serviceType = SERVICE_TYPE
             port = SERVICE_PORT
+            
+            // Add attributes to help identify the device
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                setAttribute("platform", "android")
+                setAttribute("model", android.os.Build.MODEL)
+                setAttribute("manufacturer", android.os.Build.MANUFACTURER)
+                setAttribute("device_type", "android")
+            }
         }
         
         // Create a registration listener
@@ -77,6 +85,16 @@ class NsdHelper(private val context: Context) {
         
         // Register the service
         try {
+            // Unregister any existing service first
+            try {
+                registrationListener?.let {
+                    nsdManager.unregisterService(it)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error unregistering existing service", e)
+            }
+            
+            // Register the new service
             nsdManager.registerService(serviceInfo, NsdManager.PROTOCOL_DNS_SD, registrationListener)
             Log.d(TAG, "Registering service: $SERVICE_NAME")
         } catch (e: Exception) {
@@ -107,20 +125,11 @@ class NsdHelper(private val context: Context) {
             }
             
             override fun onServiceFound(serviceInfo: NsdServiceInfo) {
-                // Don't log Android device discoveries to reduce noise
-                if (!isAndroidDevice(serviceInfo.serviceName)) {
-                    Log.d(TAG, "Service found: ${serviceInfo.serviceName}")
-                }
+                Log.d(TAG, "Service found: ${serviceInfo.serviceName}")
                 
                 // Skip our own service immediately
                 if (isOwnDevice(serviceInfo.serviceName)) {
                     Log.d(TAG, "Skipping own service at discovery level: ${serviceInfo.serviceName}")
-                    return
-                }
-                
-                // Skip all Android devices
-                if (isAndroidDevice(serviceInfo.serviceName)) {
-                    Log.d(TAG, "Skipping Android device: ${serviceInfo.serviceName}")
                     return
                 }
                 
@@ -131,10 +140,7 @@ class NsdHelper(private val context: Context) {
             }
             
             override fun onServiceLost(serviceInfo: NsdServiceInfo) {
-                // Don't log Android device losses to reduce noise
-                if (!isAndroidDevice(serviceInfo.serviceName)) {
-                    Log.d(TAG, "Service lost: ${serviceInfo.serviceName}")
-                }
+                Log.d(TAG, "Service lost: ${serviceInfo.serviceName}")
                 
                 // Remove from discovered services
                 val currentServices = _discoveredServices.value.toMutableList()
@@ -148,6 +154,16 @@ class NsdHelper(private val context: Context) {
         
         // Start discovery
         try {
+            // Stop any existing discovery first
+            try {
+                discoveryListener?.let {
+                    nsdManager.stopServiceDiscovery(it)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error stopping existing discovery", e)
+            }
+            
+            // Start new discovery
             nsdManager.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, discoveryListener)
             Log.d(TAG, "Starting service discovery for: $SERVICE_TYPE")
         } catch (e: Exception) {
@@ -159,51 +175,8 @@ class NsdHelper(private val context: Context) {
      * Check if a service name belongs to this device
      */
     private fun isOwnDevice(serviceName: String): Boolean {
-        return serviceName.contains(android.os.Build.MODEL) || 
-               serviceName == SERVICE_NAME ||
-               serviceName.contains("Android") ||
-               serviceName.contains("Phone") ||
-               serviceName.contains("Pixel") ||
-               serviceName.contains("Samsung") ||
-               serviceName.contains("Xiaomi") ||
-               serviceName.contains("Redmi") ||
-               serviceName.contains("OPPO") ||
-               serviceName.contains("Vivo") ||
-               serviceName.contains("OnePlus") ||
-               serviceName.contains("Huawei") ||
-               serviceName.contains("Honor") ||
-               serviceName.contains("Realme") ||
-               serviceName.contains("Poco")
-    }
-    
-    /**
-     * Check if a service name belongs to an Android device
-     */
-    private fun isAndroidDevice(serviceName: String): Boolean {
-        return serviceName.contains("Android") ||
-               serviceName.contains("Phone") ||
-               serviceName.contains("Pixel") ||
-               serviceName.contains("Samsung") ||
-               serviceName.contains("Xiaomi") ||
-               serviceName.contains("Redmi") ||
-               serviceName.contains("OPPO") ||
-               serviceName.contains("Vivo") ||
-               serviceName.contains("OnePlus") ||
-               serviceName.contains("Huawei") ||
-               serviceName.contains("Honor") ||
-               serviceName.contains("Realme") ||
-               serviceName.contains("Poco")
-    }
-    
-    /**
-     * Check if a service name belongs to a Windows/PC device
-     */
-    private fun isWindowsDevice(serviceName: String): Boolean {
-        return serviceName.contains("PC") ||
-               serviceName.contains("Windows") ||
-               serviceName.contains("Desktop") ||
-               serviceName.contains("Laptop") ||
-               serviceName.contains("CrossBoard-PC")
+        // Only check if it's exactly our own service name
+        return serviceName == SERVICE_NAME
     }
     
     /**
@@ -224,11 +197,8 @@ class NsdHelper(private val context: Context) {
             }
             
             override fun onServiceResolved(serviceInfo: NsdServiceInfo) {
-                // Don't log Android device resolutions to reduce noise
-                if (!isAndroidDevice(serviceInfo.serviceName)) {
-                    Log.d(TAG, "Service resolved: ${serviceInfo.serviceName}")
-                    Log.d(TAG, "Host: ${serviceInfo.host.hostAddress}, Port: ${serviceInfo.port}")
-                }
+                Log.d(TAG, "Service resolved: ${serviceInfo.serviceName}")
+                Log.d(TAG, "Host: ${serviceInfo.host.hostAddress}, Port: ${serviceInfo.port}")
                 
                 // Skip if this is our own service
                 if (isOwnDevice(serviceInfo.serviceName)) {
@@ -236,22 +206,18 @@ class NsdHelper(private val context: Context) {
                     return
                 }
                 
-                // Skip all Android devices
-                if (isAndroidDevice(serviceInfo.serviceName)) {
-                    Log.d(TAG, "Skipping Android device at resolve level: ${serviceInfo.serviceName}")
-                    return
-                }
-                
-                // Only include Windows/PC devices
-                if (!isWindowsDevice(serviceInfo.serviceName)) {
-                    Log.d(TAG, "Skipping non-PC device: ${serviceInfo.serviceName}")
-                    return
+                // Create a more descriptive device name
+                val deviceName = if (serviceInfo.serviceName.contains("PC") || 
+                                   serviceInfo.serviceName.contains("Windows")) {
+                    "Windows PC (${serviceInfo.host.hostAddress})"
+                } else {
+                    serviceInfo.serviceName + " (${serviceInfo.host.hostAddress})"
                 }
                 
                 // Create device info
                 val deviceInfo = DeviceInfo(
                     deviceId = serviceInfo.serviceName,
-                    deviceName = serviceInfo.serviceName,
+                    deviceName = deviceName,
                     ipAddress = serviceInfo.host.hostAddress
                 )
                 
@@ -264,7 +230,7 @@ class NsdHelper(private val context: Context) {
                     // Notify callback
                     onServiceResolved?.invoke(deviceInfo)
                     
-                    // Show toast only for PC devices
+                    // Show toast
                     android.os.Handler(android.os.Looper.getMainLooper()).post {
                         android.widget.Toast.makeText(
                             context, 

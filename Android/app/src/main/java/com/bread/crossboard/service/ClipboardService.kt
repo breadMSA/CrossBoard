@@ -1,6 +1,8 @@
 package com.bread.crossboard.service
 
 import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.ClipboardManager
@@ -37,6 +39,7 @@ class ClipboardService : Service() {
     companion object {
         private var isServiceRunning = false
         private const val NOTIFICATION_ID = 1001
+        private const val CHANNEL_ID = "clipboard_service_channel"
         
         // Action constants for notification buttons
         const val ACTION_SCAN_DEVICES = "com.bread.crossboard.SCAN_DEVICES"
@@ -50,6 +53,9 @@ class ClipboardService : Service() {
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "ClipboardService onCreate")
+        
+        // Create notification channel for Android O and above
+        createNotificationChannel()
         
         // Initialize clipboard manager
         clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -82,6 +88,23 @@ class ClipboardService : Service() {
         }
         
         isServiceRunning = true
+    }
+    
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "Clipboard Service"
+            val descriptionText = "CrossBoard clipboard synchronization service"
+            val importance = NotificationManager.IMPORTANCE_HIGH
+            val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
+                description = descriptionText
+                enableLights(true)
+                enableVibration(true)
+            }
+            
+            // Register the channel with the system
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
     }
     
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -216,14 +239,15 @@ class ClipboardService : Service() {
         )
         
         // Build the notification with actions
-        return NotificationCompat.Builder(this, "clipboard_service_channel")
-            .setContentTitle("CrossBoard")
-            .setContentText("Clipboard service is running")
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("CrossBoard 正在運行")
+            .setContentText("剪貼簿同步服務已啟動")
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentIntent(pendingIntent)
-            .addAction(android.R.drawable.ic_menu_search, "Scan", scanPendingIntent)
-            .addAction(android.R.drawable.ic_menu_send, "Sync", syncPendingIntent)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .addAction(android.R.drawable.ic_menu_search, "掃描", scanPendingIntent)
+            .addAction(android.R.drawable.ic_menu_send, "同步", syncPendingIntent)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(true)
             .build()
     }

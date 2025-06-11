@@ -17,7 +17,7 @@ namespace CrossBoard.Services
         private readonly IClipboardService _clipboardService;
         private readonly SettingsService _settingsService;
         private bool _isRunning = false;
-        public const int Port = 65432; // TCP port for direct communication
+        public const int Port = 8765; // TCP port for direct communication
         
         // Event handlers
         public event EventHandler<DeviceInfo>? DeviceDiscovered;
@@ -124,13 +124,17 @@ namespace CrossBoard.Services
                     string receivedText = Encoding.UTF8.GetString(buffer, 0, bytesRead);
                     Console.WriteLine($"Received text: {receivedText}");
                     
+                    // Add the device to our list if not already there
+                    var deviceIp = ((IPEndPoint)client.Client.RemoteEndPoint).Address.ToString();
+                    var deviceInfo = AddOrUpdateDevice(deviceIp);
+                    
                     // Create clipboard data
                     var clipboardData = new ClipboardData
                     {
                         Text = receivedText,
                         Type = ClipboardType.Text,
-                        SourceDeviceId = "android_device",
-                        SourceDeviceName = "Android Device",
+                        SourceDeviceId = deviceInfo.DeviceId,
+                        SourceDeviceName = deviceInfo.DeviceName,
                         Timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds()
                     };
                     
@@ -140,10 +144,6 @@ namespace CrossBoard.Services
                         _clipboardService.SetClipboardContent(clipboardData);
                         ClipboardDataReceived?.Invoke(this, clipboardData);
                     });
-                    
-                    // Add the device to our list if not already there
-                    var deviceIp = ((IPEndPoint)client.Client.RemoteEndPoint).Address.ToString();
-                    AddOrUpdateDevice(deviceIp);
                 }
             }
             catch (Exception ex)
@@ -156,7 +156,7 @@ namespace CrossBoard.Services
             }
         }
         
-        private void AddOrUpdateDevice(string ipAddress)
+        private DeviceInfo AddOrUpdateDevice(string ipAddress)
         {
             lock (_devicesLock)
             {
@@ -175,7 +175,10 @@ namespace CrossBoard.Services
                     DevicesUpdated?.Invoke(this, _devices);
                     
                     Console.WriteLine($"Added new device: {deviceInfo.DeviceName}");
+                    return deviceInfo;
                 }
+                
+                return existingDevice;
             }
         }
         
@@ -186,6 +189,8 @@ namespace CrossBoard.Services
                 
             try
             {
+                Console.WriteLine($"Attempting to send clipboard data to {ipAddress}...");
+                
                 using (var client = new TcpClient())
                 {
                     // Connect with a timeout
@@ -201,9 +206,9 @@ namespace CrossBoard.Services
                         byte[] buffer = Encoding.UTF8.GetBytes(data.Text);
                         await stream.WriteAsync(buffer, 0, buffer.Length);
                         await stream.FlushAsync();
+                        
+                        Console.WriteLine($"Successfully sent clipboard data to {ipAddress}");
                     }
-                    
-                    Console.WriteLine($"Clipboard data sent to {ipAddress}");
                 }
             }
             catch (Exception ex)
@@ -219,11 +224,20 @@ namespace CrossBoard.Services
                 
             lock (_devicesLock)
             {
+                if (_devices.Count == 0)
+                {
+                    Console.WriteLine("No devices to send clipboard data to");
+                    return;
+                }
+                
+                Console.WriteLine($"Sending clipboard data to {_devices.Count} devices");
+                
                 foreach (var device in _devices)
                 {
                     if (!string.IsNullOrEmpty(device.IpAddress))
                     {
-                        SendClipboardDataAsync(device.IpAddress, data);
+                        Console.WriteLine($"Sending clipboard data to {device.DeviceName} ({device.IpAddress})");
+                        _ = SendClipboardDataAsync(device.IpAddress, data);
                     }
                 }
             }

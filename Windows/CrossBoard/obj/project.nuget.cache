@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "s4VK6Af4j3E=",
+  "dgSpecHash": "ky3alvALAOU=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Bread\\Desktop\\Bread\\File Archive\\Coding\\CrossBoard\\Windows\\CrossBoard\\CrossBoard.csproj",
+  "projectFilePath": "C:\\Users\\Bread\\Desktop\\Bread\\File Archive\\Coding\\CrossBoard\\windows\\crossboard\\CrossBoard.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Bread\\.nuget\\packages\\common.logging\\3.4.1\\common.logging.3.4.1.nupkg.sha512",
     "C:\\Users\\Bread\\.nuget\\packages\\common.logging.core\\3.4.1\\common.logging.core.3.4.1.nupkg.sha512",

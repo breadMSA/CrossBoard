@@ -125,16 +125,27 @@ class StatusFragment : Fragment() {
     }
     
     private fun updateUI(state: MainViewModel.UiState) {
+        // Update service status text with color
         binding.serviceStatusText.text = if (state.isServiceRunning) {
+            binding.serviceStatusText.setTextColor(resources.getColor(android.R.color.holo_green_dark))
             "Running"
         } else {
+            binding.serviceStatusText.setTextColor(resources.getColor(android.R.color.holo_red_dark))
             "Stopped"
         }
         
+        // Update connection status text with color
         binding.connectionStatusText.text = state.connectionStatus
+        binding.connectionStatusText.setTextColor(
+            if (state.connectionStatus.equals("Connected", ignoreCase = true)) {
+                resources.getColor(android.R.color.holo_green_dark)
+            } else {
+                resources.getColor(android.R.color.holo_red_dark)
+            }
+        )
         
         binding.devicesCountText.text = if (state.connectedDevices > 0) {
-            "${state.connectedDevices} devices found"
+            "${state.connectedDevices} device(s) found"
         } else {
             "No devices connected"
         }
@@ -143,6 +154,10 @@ class StatusFragment : Fragment() {
         binding.startServiceButton.isEnabled = !state.isServiceRunning
         binding.stopServiceButton.isEnabled = state.isServiceRunning
         binding.scanNetworkButton.isEnabled = state.isServiceRunning
+        
+        // Always enable the connect button for direct connections
+        binding.connectButton?.isEnabled = true
+        binding.tcpConnectButton?.isEnabled = true
     }
     
     private fun displayIpAddresses() {

@@ -31,7 +31,7 @@ class DeviceAdapter(
 
         fun bind(device: NetworkManager.DeviceInfo) {
             binding.deviceNameText.text = device.deviceName
-            binding.deviceIpText.text = device.ipAddress
+            binding.deviceIpText.text = "IP: ${device.ipAddress}"
             
             binding.syncButton.setOnClickListener {
                 onSyncClick(device)

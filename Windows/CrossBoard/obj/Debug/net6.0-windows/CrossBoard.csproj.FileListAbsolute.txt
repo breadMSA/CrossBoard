@@ -31,3 +31,4 @@ C:\Users\Bread\Desktop\Bread\File Archive\Coding\CrossBoard\Windows\CrossBoard\o
 C:\Users\Bread\Desktop\Bread\File Archive\Coding\CrossBoard\Windows\CrossBoard\obj\Debug\net6.0-windows\App.g.cs
 C:\Users\Bread\Desktop\Bread\File Archive\Coding\CrossBoard\Windows\CrossBoard\bin\Debug\net6.0-windows\Microsoft.Extensions.DependencyInjection.dll
 C:\Users\Bread\Desktop\Bread\File Archive\Coding\CrossBoard\Windows\CrossBoard\bin\Debug\net6.0-windows\Microsoft.Extensions.DependencyInjection.Abstractions.dll
+C:\Users\Bread\Desktop\Bread\File Archive\Coding\CrossBoard\windows\crossboard\obj\Debug\net6.0-windows\CrossBoard.sourcelink.json

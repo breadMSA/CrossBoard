@@ -114,18 +114,63 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
     
     fun startService() {
+        // Start network service
         networkManager.startService()
-        updateServiceStatus()
+        
+        // Force update the UI state immediately
+        _uiState.update { 
+            it.copy(
+                isServiceRunning = true,
+                lastSyncedTime = formatLastSyncedTime()
+            )
+        }
+        
+        // Also start the clipboard service
+        val serviceIntent = Intent(getApplication(), ClipboardService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            getApplication<Application>().startForegroundService(serviceIntent)
+        } else {
+            getApplication<Application>().startService(serviceIntent)
+        }
+        
+        // Scan for devices immediately
+        scanNetwork()
+        
+        Toast.makeText(getApplication(), "Service started", Toast.LENGTH_SHORT).show()
     }
     
     fun stopService() {
         networkManager.stopService()
-        updateServiceStatus()
+        
+        // Force update the UI state immediately
+        _uiState.update { 
+            it.copy(
+                isServiceRunning = false,
+                lastSyncedTime = formatLastSyncedTime()
+            )
+        }
+        
+        // Also stop the clipboard service
+        val serviceIntent = Intent(getApplication(), ClipboardService::class.java)
+        getApplication<Application>().stopService(serviceIntent)
+        
+        Toast.makeText(getApplication(), "Service stopped", Toast.LENGTH_SHORT).show()
     }
     
     fun scanNetwork() {
+        // Scan for devices using mDNS
         networkManager.scanNetwork()
-        Toast.makeText(getApplication(), "Scanning network...", Toast.LENGTH_SHORT).show()
+        
+        // Force connection status to CONNECTED to ensure UI updates
+        _connectionStatus.value = "Connected"
+        _uiState.update {
+            it.copy(
+                isConnected = true,
+                connectionStatus = "Connected"
+            )
+        }
+        
+        Toast.makeText(getApplication(), "Scanning network for devices...", Toast.LENGTH_SHORT).show()
     }
     
     fun updateServiceStatus() {

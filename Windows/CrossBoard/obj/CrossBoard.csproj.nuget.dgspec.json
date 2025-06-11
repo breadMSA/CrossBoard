@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Bread\\Desktop\\Bread\\File Archive\\Coding\\CrossBoard\\Windows\\CrossBoard\\CrossBoard.csproj": {}
+    "C:\\Users\\Bread\\Desktop\\Bread\\File Archive\\Coding\\CrossBoard\\windows\\crossboard\\CrossBoard.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Bread\\Desktop\\Bread\\File Archive\\Coding\\CrossBoard\\Windows\\CrossBoard\\CrossBoard.csproj": {
+    "C:\\Users\\Bread\\Desktop\\Bread\\File Archive\\Coding\\CrossBoard\\windows\\crossboard\\CrossBoard.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Bread\\Desktop\\Bread\\File Archive\\Coding\\CrossBoard\\Windows\\CrossBoard\\CrossBoard.csproj",
+        "projectUniqueName": "C:\\Users\\Bread\\Desktop\\Bread\\File Archive\\Coding\\CrossBoard\\windows\\crossboard\\CrossBoard.csproj",
         "projectName": "CrossBoard",
-        "projectPath": "C:\\Users\\Bread\\Desktop\\Bread\\File Archive\\Coding\\CrossBoard\\Windows\\CrossBoard\\CrossBoard.csproj",
+        "projectPath": "C:\\Users\\Bread\\Desktop\\Bread\\File Archive\\Coding\\CrossBoard\\windows\\crossboard\\CrossBoard.csproj",
         "packagesPath": "C:\\Users\\Bread\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Bread\\Desktop\\Bread\\File Archive\\Coding\\CrossBoard\\Windows\\CrossBoard\\obj\\",
+        "outputPath": "C:\\Users\\Bread\\Desktop\\Bread\\File Archive\\Coding\\CrossBoard\\windows\\crossboard\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Bread\\AppData\\Roaming\\NuGet\\NuGet.Config"

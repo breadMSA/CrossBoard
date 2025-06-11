@@ -61,8 +61,10 @@ namespace CrossBoard.Services.Clipboard
                 // Check if clipboard content has changed
                 if (!string.IsNullOrEmpty(currentText) && currentText != _lastClipboardText)
                 {
-                    Console.WriteLine($"Clipboard change detected by timer: {currentText.Substring(0, Math.Min(50, currentText.Length))}...");
+                    Console.WriteLine($"Clipboard change detected: '{currentText.Substring(0, Math.Min(50, currentText.Length))}...'");
                     _lastClipboardText = currentText;
+                    
+                    // Trigger the event to notify listeners (NetworkService will handle this)
                     ClipboardChanged?.Invoke(this, EventArgs.Empty);
                 }
             }

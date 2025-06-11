@@ -66,6 +66,9 @@ namespace CrossBoard
             
             // Handle window closing event
             this.Closing += MainWindow_Closing;
+            
+            // Load settings
+            LoadSettings();
         }
         
         private void InitializeNotifyIcon()
@@ -339,6 +342,43 @@ namespace CrossBoard
                 
                 // Exit application
                 System.Windows.Application.Current.Shutdown();
+            }
+        }
+        
+        private void SaveDeviceNameButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string deviceName = DeviceNameTextBox.Text.Trim();
+                if (!string.IsNullOrEmpty(deviceName))
+                {
+                    _settingsService.DeviceName = deviceName;
+                    StatusText.Text = $"Device name saved: {deviceName}";
+                }
+                else
+                {
+                    StatusText.Text = "Device name cannot be empty";
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusText.Text = $"Error saving device name: {ex.Message}";
+            }
+        }
+        
+        private void LoadSettings()
+        {
+            try
+            {
+                // Load device name
+                DeviceNameTextBox.Text = _settingsService.DeviceName;
+                
+                // Update UI based on settings
+                // Add more settings loading here as needed
+            }
+            catch (Exception ex)
+            {
+                StatusText.Text = $"Error loading settings: {ex.Message}";
             }
         }
     }
