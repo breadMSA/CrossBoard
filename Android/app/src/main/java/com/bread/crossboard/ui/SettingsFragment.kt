@@ -1,92 +1,103 @@
 package com.bread.crossboard.ui
 
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.widget.Toast
-import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
+import androidx.preference.EditTextPreference
+import androidx.preference.ListPreference
+import androidx.preference.Preference
+import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.SwitchPreference
+import com.bread.crossboard.CrossBoardApplication
 import com.bread.crossboard.R
-import com.bread.crossboard.databinding.FragmentSettingsBinding
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
+import com.bread.crossboard.data.PreferenceManager
+import com.bread.crossboard.data.SyncDirection
 
-class SettingsFragment : Fragment() {
+class SettingsFragment : PreferenceFragmentCompat() {
     
-    private var _binding: FragmentSettingsBinding? = null
-    private val binding get() = _binding!!
+    private lateinit var preferenceManager: PreferenceManager
     
-    private lateinit var viewModel: MainViewModel
-    
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        _binding = FragmentSettingsBinding.inflate(inflater, container, false)
-        return binding.root
-    }
-    
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+        setPreferencesFromResource(R.xml.settings, rootKey)
         
-        viewModel = ViewModelProvider(requireActivity())[MainViewModel::class.java]
+        preferenceManager = CrossBoardApplication.instance.preferenceManager
         
-        setupListeners()
-        observeViewModel()
-    }
-    
-    private fun setupListeners() {
-        binding.saveSettingsButton.setOnClickListener {
-            saveSettings()
-        }
-    }
-    
-    private fun observeViewModel() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.settingsState.collectLatest { state ->
-                updateUI(state)
+        // Device name preference
+        val deviceNamePref = findPreference<EditTextPreference>("device_name")
+        deviceNamePref?.let {
+            it.text = preferenceManager.deviceName
+            it.setOnPreferenceChangeListener { _, newValue ->
+                preferenceManager.deviceName = newValue.toString()
+                true
             }
         }
-    }
-    
-    private fun updateUI(state: MainViewModel.SettingsState) {
-        binding.serverPortEditText.setText(state.serverPort.toString())
-        binding.deviceNameEditText.setText(state.deviceName)
-        binding.autoStartSwitch.isChecked = state.autoStartOnBoot
-        binding.notificationsSwitch.isChecked = state.showNotifications
-    }
-    
-    private fun saveSettings() {
-        val serverPortText = binding.serverPortEditText.text.toString()
-        val deviceName = binding.deviceNameEditText.text.toString()
         
-        if (serverPortText.isBlank() || deviceName.isBlank()) {
-            Toast.makeText(requireContext(), R.string.settings_empty_fields, Toast.LENGTH_SHORT).show()
-            return
+        // Sync direction preference
+        val syncDirectionPref = findPreference<ListPreference>("sync_direction")
+        syncDirectionPref?.let {
+            it.value = when (preferenceManager.syncDirection) {
+                SyncDirection.BIDIRECTIONAL -> "bidirectional"
+                SyncDirection.RECEIVE_ONLY -> "receive_only"
+                SyncDirection.SEND_ONLY -> "send_only"
+            }
+            
+            it.setOnPreferenceChangeListener { _, newValue ->
+                val direction = when (newValue.toString()) {
+                    "bidirectional" -> SyncDirection.BIDIRECTIONAL
+                    "receive_only" -> SyncDirection.RECEIVE_ONLY
+                    "send_only" -> SyncDirection.SEND_ONLY
+                    else -> SyncDirection.BIDIRECTIONAL
+                }
+                preferenceManager.syncDirection = direction
+                true
+            }
         }
         
-        val serverPort = serverPortText.toIntOrNull()
-        if (serverPort == null || serverPort < 1024 || serverPort > 65535) {
-            Toast.makeText(requireContext(), R.string.settings_invalid_port, Toast.LENGTH_SHORT).show()
-            return
+        // Auto copy preference
+        val autoCopyPref = findPreference<SwitchPreference>("auto_copy")
+        autoCopyPref?.let {
+            it.isChecked = preferenceManager.autoCopy
+            it.setOnPreferenceChangeListener { _, newValue ->
+                preferenceManager.autoCopy = newValue as Boolean
+                true
+            }
         }
         
-        val settings = MainViewModel.SettingsState(
-            serverPort = serverPort,
-            deviceName = deviceName,
-            autoStartOnBoot = binding.autoStartSwitch.isChecked,
-            showNotifications = binding.notificationsSwitch.isChecked
-        )
+        // Wi-Fi only preference
+        val wifiOnlyPref = findPreference<SwitchPreference>("wifi_only")
+        wifiOnlyPref?.let {
+            it.isChecked = preferenceManager.wifiOnly
+            it.setOnPreferenceChangeListener { _, newValue ->
+                preferenceManager.wifiOnly = newValue as Boolean
+                true
+            }
+        }
         
-        viewModel.saveSettings(settings)
-        Toast.makeText(requireContext(), R.string.settings_saved, Toast.LENGTH_SHORT).show()
-    }
-    
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
+        // Auto start preference
+        val autoStartPref = findPreference<SwitchPreference>("auto_start")
+        autoStartPref?.let {
+            it.isChecked = preferenceManager.autoStart
+            it.setOnPreferenceChangeListener { _, newValue ->
+                preferenceManager.autoStart = newValue as Boolean
+                true
+            }
+        }
+        
+        // Version preference
+        val versionPref = findPreference<Preference>("version")
+        versionPref?.let {
+            val packageInfo = requireContext().packageManager.getPackageInfo(requireContext().packageName, 0)
+            it.summary = packageInfo.versionName
+        }
+        
+        // GitHub preference
+        val githubPref = findPreference<Preference>("github")
+        githubPref?.let {
+            it.setOnPreferenceClickListener {
+                // Open GitHub URL in browser
+                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW)
+                intent.data = android.net.Uri.parse("https://github.com/yourusername/crossboard")
+                startActivity(intent)
+                true
+            }
+        }
     }
 } 

@@ -19,6 +19,7 @@ import com.bread.crossboard.MainActivity
 import com.bread.crossboard.R
 import com.bread.crossboard.model.ClipboardData
 import com.bread.crossboard.model.ClipboardType
+import com.bread.crossboard.data.SyncDirection
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -80,11 +81,17 @@ class ClipboardService : Service() {
             // Update last clipboard text to avoid sending it back
             lastClipboardText = clipboardData.text
             
-            // Set to clipboard
-            CrossBoardApplication.instance.clipboardManager.setClipboardContent(clipboardData)
-            
-            // Show toast notification
-            showToast("Received clipboard: ${clipboardData.text.take(20)}${if (clipboardData.text.length > 20) "..." else ""}")
+            // Check sync direction before setting to clipboard
+            val syncDirection = CrossBoardApplication.instance.preferenceManager.syncDirection
+            if (syncDirection != SyncDirection.SEND_ONLY) {
+                // Set to clipboard
+                CrossBoardApplication.instance.clipboardManager.setClipboardContent(clipboardData)
+                
+                // Show toast notification
+                showToast("Received clipboard: ${clipboardData.text.take(20)}${if (clipboardData.text.length > 20) "..." else ""}")
+            } else {
+                Log.d(TAG, "Not setting clipboard - send only mode enabled")
+            }
         }
         
         isServiceRunning = true
@@ -181,14 +188,20 @@ class ClipboardService : Service() {
                 clipboardData.sourceDeviceId = CrossBoardApplication.instance.preferenceManager.deviceId
                 clipboardData.sourceDeviceName = CrossBoardApplication.instance.preferenceManager.deviceName
                 
-                // Send to connected devices
-                coroutineScope.launch {
-                    Log.d(TAG, "Broadcasting clipboard to connected devices")
-                    CrossBoardApplication.instance.networkManager.broadcastClipboardData(clipboardData)
+                // Check sync direction before sending
+                val syncDirection = CrossBoardApplication.instance.preferenceManager.syncDirection
+                if (syncDirection != SyncDirection.RECEIVE_ONLY) {
+                    // Send to connected devices
+                    coroutineScope.launch {
+                        Log.d(TAG, "Broadcasting clipboard to connected devices")
+                        CrossBoardApplication.instance.networkManager.broadcastClipboardData(clipboardData)
+                    }
+                    
+                    // Show toast notification
+                    showToast("Sending clipboard: ${clipboardData.text.take(20)}${if (clipboardData.text.length > 20) "..." else ""}")
+                } else {
+                    Log.d(TAG, "Not sending clipboard - receive only mode enabled")
                 }
-                
-                // Show toast notification
-                showToast("Sending clipboard: ${clipboardData.text.take(20)}${if (clipboardData.text.length > 20) "..." else ""}")
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error processing clipboard change", e)

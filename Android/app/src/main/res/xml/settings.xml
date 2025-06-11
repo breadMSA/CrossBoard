@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory android:title="裝置設定">
+        <EditTextPreference
+            android:key="device_name"
+            android:title="裝置名稱"
+            android:summary="設定此裝置的名稱，將顯示在其他裝置上"
+            android:defaultValue="Android 裝置"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="同步設定">
+        <ListPreference
+            android:key="sync_direction"
+            android:title="同步方向"
+            android:summary="設定剪貼簿同步的方向"
+            android:entries="@array/sync_direction_entries"
+            android:entryValues="@array/sync_direction_values"
+            android:defaultValue="bidirectional"
+            app:useSimpleSummaryProvider="true" />
+
+        <SwitchPreference
+            android:key="auto_copy"
+            android:title="自動複製"
+            android:summary="自動將收到的剪貼簿內容複製到本機"
+            android:defaultValue="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="連線設定">
+        <SwitchPreference
+            android:key="wifi_only"
+            android:title="僅在 Wi-Fi 下同步"
+            android:summary="僅在連接 Wi-Fi 網路時同步剪貼簿"
+            android:defaultValue="true" />
+
+        <SwitchPreference
+            android:key="auto_start"
+            android:title="開機自動啟動"
+            android:summary="裝置開機時自動啟動服務"
+            android:defaultValue="false" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="關於">
+        <Preference
+            android:key="version"
+            android:title="版本"
+            android:summary="1.0.0" />
+            
+        <Preference
+            android:key="github"
+            android:title="GitHub"
+            android:summary="查看原始碼" />
+    </PreferenceCategory>
+
+</PreferenceScreen> 

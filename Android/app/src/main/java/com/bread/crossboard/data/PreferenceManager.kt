@@ -18,11 +18,12 @@ class PreferenceManager(context: Context) {
         private const val KEY_DEVICE_NAME = "device_name"
         private const val KEY_DEVICE_ID = "device_id"
         private const val KEY_LAST_SYNCED = "last_synced"
+        private const val KEY_SYNC_DIRECTION = "sync_direction"
     }
     
     // Auto-start on boot
     var autoStart: Boolean
-        get() = prefs.getBoolean(KEY_AUTO_START, true)
+        get() = prefs.getBoolean(KEY_AUTO_START, false)
         set(value) = prefs.edit().putBoolean(KEY_AUTO_START, value).apply()
     
     // Auto-copy received content
@@ -58,4 +59,11 @@ class PreferenceManager(context: Context) {
     var lastSynced: Long
         get() = prefs.getLong(KEY_LAST_SYNCED, 0)
         set(value) = prefs.edit().putLong(KEY_LAST_SYNCED, value).apply()
+    
+    var syncDirection: SyncDirection
+        get() {
+            val value = prefs.getString(KEY_SYNC_DIRECTION, SyncDirection.BIDIRECTIONAL.name) ?: SyncDirection.BIDIRECTIONAL.name
+            return SyncDirection.valueOf(value)
+        }
+        set(value) = prefs.edit().putString(KEY_SYNC_DIRECTION, value.name).apply()
 } 

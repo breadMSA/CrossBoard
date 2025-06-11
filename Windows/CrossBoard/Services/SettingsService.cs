@@ -73,6 +73,16 @@ namespace CrossBoard.Services
             }
         }
         
+        public SyncDirection SyncDirection
+        {
+            get => _settings.SyncDirection;
+            set
+            {
+                _settings.SyncDirection = value;
+                SaveSettings();
+            }
+        }
+        
         public SettingsService()
         {
             // Load or create settings
@@ -115,7 +125,8 @@ namespace CrossBoard.Services
                 AutoCopy = true,
                 WifiOnly = true,
                 AutoStart = false,
-                LastSynced = DateTime.MinValue
+                LastSynced = DateTime.MinValue,
+                SyncDirection = SyncDirection.Bidirectional
             };
         }
         
@@ -184,6 +195,13 @@ namespace CrossBoard.Services
         }
     }
     
+    public enum SyncDirection
+    {
+        Bidirectional,
+        ReceiveOnly,
+        SendOnly
+    }
+    
     public class Settings
     {
         public string DeviceId { get; set; }
@@ -192,5 +210,6 @@ namespace CrossBoard.Services
         public bool WifiOnly { get; set; }
         public bool AutoStart { get; set; }
         public DateTime LastSynced { get; set; }
+        public SyncDirection SyncDirection { get; set; }
     }
 } 

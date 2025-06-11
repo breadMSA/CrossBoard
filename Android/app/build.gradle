@@ -48,6 +48,9 @@ dependencies {
     implementation 'androidx.viewpager2:viewpager2:1.0.0'
     implementation 'androidx.fragment:fragment-ktx:1.6.2'
     
+    // Preference library for settings
+    implementation 'androidx.preference:preference-ktx:1.2.1'
+    
     // Network libraries
     implementation 'com.squareup.okhttp3:okhttp:4.11.0'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'

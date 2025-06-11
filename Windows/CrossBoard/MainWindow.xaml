@@ -27,67 +27,107 @@
         </Grid>
         
         <!-- Main Content -->
-        <Grid Grid.Row="1" Margin="10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
+        <TabControl Grid.Row="1" Margin="10">
+            <!-- Status Tab -->
+            <TabItem Header="Status">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <!-- Left Panel - Status and Connections -->
+                    <Border Grid.Column="0" BorderBrush="#DDDDDD" BorderThickness="1" Margin="0,0,5,0" Padding="10">
+                        <StackPanel>
+                            <TextBlock Text="Status" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+                            
+                            <TextBlock Text="Service Status:" FontWeight="Bold"/>
+                            <TextBlock x:Name="ServiceStatusText" Text="Running" Margin="0,0,0,10"/>
+                            
+                            <TextBlock Text="IP Addresses:" FontWeight="Bold"/>
+                            <TextBox x:Name="IpAddressText" Height="60" IsReadOnly="True" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                            
+                            <TextBlock Text="Connected Devices:" FontWeight="Bold"/>
+                            <ListBox x:Name="DevicesList" Height="100" Margin="0,0,0,10"/>
+                            
+                            <TextBlock Text="Manual Connection" FontSize="16" FontWeight="Bold" Margin="0,10,0,5"/>
+                            <TextBlock Text="Enter Android device IP address:"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="ManualIpTextBox" Grid.Column="0" Margin="0,0,5,0"/>
+                                <Button x:Name="ConnectButton" Grid.Column="1" Content="Connect" Click="ConnectButton_Click"/>
+                            </Grid>
+                            
+                            <Button x:Name="ScanNetworkButton" Content="Scan Network" Margin="0,10,0,0" Click="ScanNetworkButton_Click"/>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Right Panel - Clipboard Data -->
+                    <Border Grid.Column="1" BorderBrush="#DDDDDD" BorderThickness="1" Margin="5,0,0,0" Padding="10">
+                        <StackPanel>
+                            <TextBlock Text="Clipboard Data" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+                            
+                            <TextBlock Text="Last Local Clipboard:" FontWeight="Bold"/>
+                            <TextBox x:Name="LastClipboardText" Height="60" TextWrapping="Wrap" IsReadOnly="True" Margin="0,0,0,10"/>
+                            <TextBlock x:Name="LastClipboardTime" Text="No data" Margin="0,0,0,10"/>
+                            
+                            <TextBlock Text="Last Received Clipboard:" FontWeight="Bold"/>
+                            <TextBox x:Name="ReceivedClipboardText" Height="60" TextWrapping="Wrap" IsReadOnly="True" Margin="0,0,0,10"/>
+                            <TextBlock x:Name="ReceivedClipboardTime" Text="No data" Margin="0,0,0,5"/>
+                            <TextBlock x:Name="ReceivedClipboardDevice" Text="No device" Margin="0,0,0,10"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
             
-            <!-- Left Panel - Status and Settings -->
-            <Border Grid.Column="0" BorderBrush="#DDDDDD" BorderThickness="1" Margin="0,0,5,0" Padding="10">
-                <StackPanel>
-                    <TextBlock Text="Status" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
-                    
-                    <TextBlock Text="Service Status:" FontWeight="Bold"/>
-                    <TextBlock x:Name="ServiceStatusText" Text="Running" Margin="0,0,0,10"/>
-                    
-                    <TextBlock Text="Device Name:" FontWeight="Bold"/>
-                    <Grid Margin="0,0,0,10">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBox x:Name="DeviceNameTextBox" Grid.Column="0" Margin="0,0,5,0"/>
-                        <Button x:Name="SaveDeviceNameButton" Grid.Column="1" Content="Save" Click="SaveDeviceNameButton_Click"/>
-                    </Grid>
-                    
-                    <TextBlock Text="IP Addresses:" FontWeight="Bold"/>
-                    <TextBox x:Name="IpAddressText" Height="60" IsReadOnly="True" TextWrapping="Wrap" Margin="0,0,0,10"/>
-                    
-                    <TextBlock Text="Connected Devices:" FontWeight="Bold"/>
-                    <ListBox x:Name="DevicesList" Height="100" Margin="0,0,0,10"/>
-                    
-                    <TextBlock Text="Manual Connection" FontSize="16" FontWeight="Bold" Margin="0,10,0,5"/>
-                    <TextBlock Text="Enter Android device IP address:"/>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBox x:Name="ManualIpTextBox" Grid.Column="0" Margin="0,0,5,0"/>
-                        <Button x:Name="ConnectButton" Grid.Column="1" Content="Connect" Click="ConnectButton_Click"/>
-                    </Grid>
-                    
-                    <Button x:Name="ScanNetworkButton" Content="Scan Network" Margin="0,10,0,0" Click="ScanNetworkButton_Click"/>
-                </StackPanel>
-            </Border>
-            
-            <!-- Right Panel - Clipboard Data -->
-            <Border Grid.Column="1" BorderBrush="#DDDDDD" BorderThickness="1" Margin="5,0,0,0" Padding="10">
-                <StackPanel>
-                    <TextBlock Text="Clipboard Data" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
-                    
-                    <TextBlock Text="Last Local Clipboard:" FontWeight="Bold"/>
-                    <TextBox x:Name="LastClipboardText" Height="60" TextWrapping="Wrap" IsReadOnly="True" Margin="0,0,0,10"/>
-                    <TextBlock x:Name="LastClipboardTime" Text="No data" Margin="0,0,0,10"/>
-                    
-                    <TextBlock Text="Last Received Clipboard:" FontWeight="Bold"/>
-                    <TextBox x:Name="ReceivedClipboardText" Height="60" TextWrapping="Wrap" IsReadOnly="True" Margin="0,0,0,10"/>
-                    <TextBlock x:Name="ReceivedClipboardTime" Text="No data" Margin="0,0,0,5"/>
-                    <TextBlock x:Name="ReceivedClipboardDevice" Text="No device" Margin="0,0,0,10"/>
-                </StackPanel>
-            </Border>
-        </Grid>
+            <!-- Settings Tab -->
+            <TabItem Header="Settings">
+                <ScrollViewer>
+                    <StackPanel Margin="10">
+                        <TextBlock Text="Device Settings" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+                        
+                        <TextBlock Text="Device Name:" FontWeight="Bold"/>
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="DeviceNameTextBox" Grid.Column="0" Margin="0,0,5,0"/>
+                            <Button x:Name="SaveDeviceNameButton" Grid.Column="1" Content="Save" Click="SaveDeviceNameButton_Click"/>
+                        </Grid>
+                        
+                        <TextBlock Text="Synchronization Direction:" FontWeight="Bold"/>
+                        <ComboBox x:Name="SyncDirectionComboBox" Margin="0,0,0,10" SelectionChanged="SyncDirectionComboBox_SelectionChanged">
+                            <ComboBoxItem Content="Bidirectional (Send and Receive)" Tag="Bidirectional"/>
+                            <ComboBoxItem Content="Receive Only (Android to Windows)" Tag="ReceiveOnly"/>
+                            <ComboBoxItem Content="Send Only (Windows to Android)" Tag="SendOnly"/>
+                        </ComboBox>
+                        
+                        <TextBlock Text="Startup Options:" FontWeight="Bold"/>
+                        <CheckBox x:Name="AutoStartCheckBox" Content="Start CrossBoard when Windows starts" Margin="0,5,0,5" Checked="AutoStartCheckBox_Checked" Unchecked="AutoStartCheckBox_Unchecked"/>
+                        
+                        <TextBlock Text="Network Settings:" FontWeight="Bold" Margin="0,10,0,0"/>
+                        <CheckBox x:Name="WifiOnlyCheckBox" Content="Only sync when connected to Wi-Fi" Margin="0,5,0,5" Checked="WifiOnlyCheckBox_Checked" Unchecked="WifiOnlyCheckBox_Unchecked"/>
+                        
+                        <TextBlock Text="Firewall Configuration" FontSize="18" FontWeight="Bold" Margin="0,20,0,10"/>
+                        <TextBlock TextWrapping="Wrap">
+                            If you're having trouble with automatic device discovery, you may need to configure your Windows Firewall.
+                            Click the button below to run the firewall configuration script:
+                        </TextBlock>
+                        <Button x:Name="ConfigureFirewallButton" Content="Configure Firewall" Margin="0,10,0,0" Click="ConfigureFirewallButton_Click"/>
+                        
+                        <TextBlock TextWrapping="Wrap" Margin="0,10,0,0">
+                            Note: The script needs to be run as administrator. It will add rules for:
+                            <LineBreak/>- TCP port 8765 (for clipboard data)
+                            <LineBreak/>- UDP port 5353 (for mDNS device discovery)
+                        </TextBlock>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
         
         <!-- Footer -->
         <Border Grid.Row="2" Background="#EEEEEE" Padding="10">

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="sync_direction_entries">
+        <item>雙向同步 (發送和接收)</item>
+        <item>僅接收 (Android 接收 PC 的剪貼簿)</item>
+        <item>僅發送 (Android 發送到 PC)</item>
+    </string-array>
+    
+    <string-array name="sync_direction_values">
+        <item>bidirectional</item>
+        <item>receive_only</item>
+        <item>send_only</item>
+    </string-array>
+</resources> 

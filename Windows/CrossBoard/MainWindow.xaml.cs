@@ -265,8 +265,12 @@ namespace CrossBoard
                     LastClipboardTime.Text = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                 });
                 
-                // Send to connected devices
-                _networkService.SendClipboardDataToAllDevices(clipboardData);
+                // Check sync direction before sending
+                if (_settingsService.SyncDirection != SyncDirection.ReceiveOnly)
+                {
+                    // Send to connected devices
+                    _networkService.SendClipboardDataToAllDevices(clipboardData);
+                }
             }
         }
         
@@ -292,18 +296,22 @@ namespace CrossBoard
                 ReceivedClipboardDevice.Text = clipboardData.SourceDeviceName;
             });
             
-            // Set to clipboard
-            _clipboardService.SetClipboardContent(clipboardData);
-            
-            // Show notification if window is minimized
-            if (this.WindowState == WindowState.Minimized || !this.IsVisible)
+            // Check sync direction before setting to clipboard
+            if (_settingsService.SyncDirection != SyncDirection.SendOnly)
             {
-                _notifyIcon?.ShowBalloonTip(
-                    3000,
-                    "New Clipboard Content",
-                    $"Received from: {clipboardData.SourceDeviceName}",
-                    ToolTipIcon.Info
-                );
+                // Set to clipboard
+                _clipboardService.SetClipboardContent(clipboardData);
+                
+                // Show notification if window is minimized
+                if (this.WindowState == WindowState.Minimized || !this.IsVisible)
+                {
+                    _notifyIcon?.ShowBalloonTip(
+                        3000,
+                        "New Clipboard Content",
+                        $"Received from: {clipboardData.SourceDeviceName}",
+                        ToolTipIcon.Info
+                    );
+                }
             }
         }
         
@@ -373,12 +381,103 @@ namespace CrossBoard
                 // Load device name
                 DeviceNameTextBox.Text = _settingsService.DeviceName;
                 
-                // Update UI based on settings
-                // Add more settings loading here as needed
+                // Load sync direction
+                SyncDirectionComboBox.SelectedIndex = (int)_settingsService.SyncDirection;
+                
+                // Load auto start setting
+                AutoStartCheckBox.IsChecked = _settingsService.AutoStart;
+                
+                // Load wifi only setting
+                WifiOnlyCheckBox.IsChecked = _settingsService.WifiOnly;
             }
             catch (Exception ex)
             {
                 StatusText.Text = $"Error loading settings: {ex.Message}";
+            }
+        }
+        
+        private void SyncDirectionComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (SyncDirectionComboBox.SelectedItem is ComboBoxItem selectedItem)
+            {
+                string tag = selectedItem.Tag.ToString();
+                if (Enum.TryParse<SyncDirection>(tag, out var direction))
+                {
+                    _settingsService.SyncDirection = direction;
+                    StatusText.Text = $"Sync direction set to: {direction}";
+                }
+            }
+        }
+        
+        private void AutoStartCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            _settingsService.AutoStart = true;
+            StatusText.Text = "Auto start enabled";
+        }
+        
+        private void AutoStartCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            _settingsService.AutoStart = false;
+            StatusText.Text = "Auto start disabled";
+        }
+        
+        private void WifiOnlyCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            _settingsService.WifiOnly = true;
+            StatusText.Text = "Wi-Fi only mode enabled";
+        }
+        
+        private void WifiOnlyCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            _settingsService.WifiOnly = false;
+            StatusText.Text = "Wi-Fi only mode disabled";
+        }
+        
+        private void ConfigureFirewallButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Get the path to the setup_permissions.bat file
+                string batchFilePath = System.IO.Path.Combine(
+                    System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location),
+                    "setup_permissions.bat"
+                );
+                
+                // Check if the file exists
+                if (!System.IO.File.Exists(batchFilePath))
+                {
+                    System.Windows.MessageBox.Show(
+                        "setup_permissions.bat file not found. Please make sure it exists in the application directory.",
+                        "Error",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error
+                    );
+                    return;
+                }
+                
+                // Create process start info
+                var startInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = $"/c start \"Firewall Configuration\" \"{batchFilePath}\"",
+                    UseShellExecute = true,
+                    Verb = "runas" // Request admin privileges
+                };
+                
+                // Start the process
+                System.Diagnostics.Process.Start(startInfo);
+                
+                StatusText.Text = "Firewall configuration script started";
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show(
+                    $"Error running firewall configuration script: {ex.Message}",
+                    "Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error
+                );
+                StatusText.Text = "Error running firewall configuration";
             }
         }
     }
