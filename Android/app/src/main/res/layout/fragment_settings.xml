@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/serverPortLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Server Port"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/serverPortEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/deviceNameLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="Device Name"
+        app:layout_constraintTop_toBottomOf="@id/serverPortLayout">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/deviceNameEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.switchmaterial.SwitchMaterial
+        android:id="@+id/autoStartSwitch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Auto Start on Boot"
+        app:layout_constraintTop_toBottomOf="@id/deviceNameLayout" />
+
+    <com.google.android.material.switchmaterial.SwitchMaterial
+        android:id="@+id/notificationsSwitch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Show Notifications"
+        app:layout_constraintTop_toBottomOf="@id/autoStartSwitch" />
+
+    <Button
+        android:id="@+id/saveSettingsButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="Save Settings"
+        app:layout_constraintTop_toBottomOf="@id/notificationsSwitch" />
+
+</androidx.constraintlayout.widget.ConstraintLayout> 

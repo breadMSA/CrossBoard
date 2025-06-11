@@ -1,0 +1,3 @@
+@echo off
+echo Running CrossBoard as administrator...
+powershell -Command "Start-Process -FilePath 'dotnet' -ArgumentList 'run' -Verb RunAs -WorkingDirectory '%~dp0'" 
